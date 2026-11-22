@@ -1,0 +1,32 @@
+# Build the app first (Dockerfile.jvm copies build/quarkus-app):
+#   ./gradlew build
+#   docker compose up --build
+services:
+  dynamodb-local:
+    image: amazon/dynamodb-local:2.5.2
+    # In-memory by default: data is lost on `docker compose down`.
+    command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-inMemory"]
+    # To persist data across restarts, use this command and uncomment both volume blocks:
+    # command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-dbPath", "/home/dynamodblocal/data"]
+    # volumes:
+    #   - dynamodb-data:/home/dynamodblocal/data
+    ports:
+      - "8000:8000"
+
+  app:
+    build:
+      context: .
+      dockerfile: src/main/docker/Dockerfile.jvm
+    depends_on:
+      - dynamodb-local
+    ports:
+      - "8080:8080"
+    environment:
+      QUARKUS_DYNAMODB_ENDPOINT_OVERRIDE: http://dynamodb-local:8000
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-local}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-local}
+      USER_MANAGEMENT_DYNAMODB_TABLE_NAME: ${USER_MANAGEMENT_DYNAMODB_TABLE_NAME:-users}
+      USER_MANAGEMENT_DYNAMODB_CREATE_TABLE: "true"
+
+# volumes:
+#   dynamodb-data:

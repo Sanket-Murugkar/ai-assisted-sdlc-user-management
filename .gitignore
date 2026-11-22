@@ -31,3 +31,6 @@ build/
 .idea/
 *.iml
 .vscode/
+
+# Local environment overrides
+.env
